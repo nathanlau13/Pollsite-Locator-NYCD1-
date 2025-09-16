@@ -1,0 +1,599 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Poll Site Locator</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="https://api.mapbox.com/mapbox-gl-js/v3.14.0/mapbox-gl.js"></script>
+    <link
+      href="https://api.mapbox.com/mapbox-gl-js/v3.14.0/mapbox-gl.css"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        color: #404040;
+        font: 400 15px/22px 'Source Sans Pro', 'Helvetica Neue', sans-serif;
+        margin: 0;
+        padding: 0;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      * { box-sizing: border-box; }
+
+      .sidebar {
+        position: absolute;
+        width: 33.3333%;
+        height: 100%;
+        top: 0;
+        left: 0;
+        overflow: hidden;
+        border-right: 1px solid rgb(0 0 0 / 25%);
+      }
+
+      .map { position: absolute; left: 33.3333%; width: 66.6666%; top: 0; bottom: 0; }
+
+      h1 { font-size: 22px; margin: 0; font-weight: 400; line-height: 20px; padding: 20px 2px; }
+
+      a { color: #404040; text-decoration: none; }
+      a:hover { color: #101010; }
+
+      .heading {
+        background: #FFA500;
+        border-bottom: 1px solid #eee;
+        min-height: 60px;
+        line-height: 60px;
+        padding: 0 10px;
+        color: #fff;
+      }
+
+      .listings {
+        height: 100%;
+        overflow: auto;
+        padding-bottom: 60px;
+      }
+
+      .listings .item {
+        display: block;
+        border-bottom: 1px solid #eee;
+        padding: 10px;
+        text-decoration: none;
+      }
+
+      .listings .item:last-child { border-bottom: none; }
+
+      .listings .item .title {
+        display: block;
+        color: #FFA500;
+        font-weight: 700;
+      }
+
+      .listings .item .title small { font-weight: 400; }
+
+      .listings .item.active .title,
+      .listings .item .title:hover { color: #ff7300; }
+
+      .listings .item.active { background-color: #f8f8f8; }
+
+      ::-webkit-scrollbar { width: 3px; height: 3px; border-left: 0; background: rgb(0 0 0 / 10%); }
+      ::-webkit-scrollbar-track { background: none; }
+      ::-webkit-scrollbar-thumb { background: #FFA500; border-radius: 0; }
+
+      .marker {
+        border: none;
+        cursor: pointer;
+        height: 25px;
+        width: 25px;
+        background-image: url('pollsiteimage.png');
+        background-size: cover;
+      }
+
+      .mapboxgl-popup { padding-bottom: 50px; }
+      .mapboxgl-popup-close-button { display: none; }
+
+      .mapboxgl-popup-content {
+        font: 400 15px/22px 'Source Sans Pro', 'Helvetica Neue', sans-serif;
+        padding: 0;
+        width: 200px;
+      }
+
+      .mapboxgl-popup-content h3 {
+        background: #FFA500;
+        color: #fff;
+        margin: 0;
+        padding: 10px;
+        border-radius: 3px 3px 0 0;
+        font-weight: 700;
+        margin-top: -15px;
+      }
+
+      .mapboxgl-popup-content h4 { margin: 0; padding: 10px; font-weight: 400; }
+      .mapboxgl-popup-content div { padding: 10px; }
+
+      .mapboxgl-popup-anchor-top > .mapboxgl-popup-content { margin-top: 15px; }
+      .mapboxgl-popup-anchor-top > .mapboxgl-popup-tip { border-bottom-color: #FFA500; }
+    </style>
+  </head>
+  <body>
+    <div class="sidebar">
+      <div class="heading">
+        <h1>NYC District 1 Election Poll Sites</h1>
+      </div>
+      <div id="listings" class="listings"></div>
+    </div>
+    <div id="map" class="map"></div>
+    <script>
+      mapboxgl.accessToken = 'pk.eyJ1IjoibmF0aGFubGF1MTMiLCJhIjoiY21mOHVsOTZxMTh5YjJsbXh0dWNkdjFudyJ9.rpGGirYNbrN3bQEyQ66DLg';
+    const map = new mapboxgl.Map({
+      container: 'map',
+      style: 'mapbox://styles/mapbox/streets-v12',
+      center: [-74.006, 40.7128],
+      zoom: 12,
+      scrollZoom: true
+    });
+    
+    const pollSites = {
+      "type": "FeatureCollection",
+      "features": [
+        {
+          "type": "Feature",
+          "properties": {
+            "name": "PS 234",
+            "address": "215 Chrystie St, New York, NY 10002",
+            "notes": "Also known as The Independence School; serves grades K-8",
+            "type": "school"
+          },
+          "geometry": {
+            "type": "Point",
+            "coordinates": [-73.992, 40.718]
+          }
+        },
+        {
+          "type": "Feature",
+          "properties": {
+            "name": "PS 20",
+            "address": "166 Essex St, New York, NY 10002",
+            "notes": "A preK-5 elementary school on the Lower East Side",
+            "type": "school"
+          },
+          "geometry": {
+            "type": "Point",
+            "coordinates": [-73.989, 40.715]
+          }
+        },
+        {
+        "type": "Feature",
+        "properties": {
+          "id": "uasbyw-01",
+          "name": "Urban Assembly School of Business for Young Women (UASBYW)",
+          "address": "26 Broadway, New York, NY 10004",
+          
+          "notes": "All-girls business-themed college preparatory high school (District 2)",
+          "type": "school"
+        },
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-74.013166, 40.705202]
+        }
+      },
+      {
+        "type": "Feature",
+        "properties": {
+          "name": "Leadership & Public Service High School",
+          "address": "90 Trinity Place, New York, NY 10006",
+          "notes": "Also known as HS for Leadership; small, leadership-focused high school in District 2",
+          "type": "school"
+        },
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-74.012184, 40.708061]
+        }
+      },
+      {
+        "type": "Feature",
+        "properties": {
+          "name": "St. Margaret's House",
+          "address": "49 Fulton Street, New York, NY 10038",
+          "notes": "Senior housing and community center located in the South Street Seaport Historic District",
+          "type": "community_center"
+        },
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-74.00467, 40.70889]
+        }
+      },
+      {
+        "type": "Feature",
+        "properties": {
+          "name": "Southbridge Towers II",
+          "address": "90 Beekman Street, New York, NY 10038",
+          "notes": "Residential co-op complex near the South Street Seaport",
+          "type": "residential"
+        },
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-74.00263, 40.70996]
+        }
+      },
+      {
+        "type": "Feature",
+        "properties": {
+          "name": "Hamilton-Madison House",
+          "address": "50 Madison Street, New York, NY 10038",
+          "notes": "Settlement house and community center offering services for immigrants, seniors, and families",
+          "type": "community_center"
+        },
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-73.99798, 40.71044]
+        }
+      },
+      {
+        "type": "Feature",
+        "properties": {
+          "name": "PS 2 Meyer London School",
+          "address": "122 Henry Street, New York, NY 10002",
+          "notes": "Public elementary school on the Lower East Side; named after Congressman Meyer London",
+          "type": "school"
+        },
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-73.99167, 40.71305]
+        }
+      },
+      {
+        "type": "Feature",
+        "properties": {
+          "name": "New York County Civil Court",
+          "address": "111 Centre Street, New York, NY 10013",
+          "notes": "Manhattan Civil Court building",
+          "type": "government_building"
+        },
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-73.99962, 40.71636]
+        }
+      },
+      {
+        "type": "Feature",
+        "properties": {
+          "name": "PS 184M Shuang Wen School",
+          "address": "327 Cherry Street, New York, NY 10002",
+          "notes": "Bilingual (English-Mandarin) public school on the Lower East Side",
+          "type": "school"
+        },
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-73.98587, 40.71137]
+        }
+      },
+      {
+        "type": "Feature",
+        "properties": {
+          "name": "East River Housing IV",
+          "address": "572 Grand Street, New York, NY 10002",
+          "notes": "Part of the East River cooperative housing complex",
+          "type": "residential"
+        },
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-73.97989, 40.71510]
+        }
+      },
+      {
+        "type": "Feature",
+        "properties": {
+          "name": "Amalgamated Dwellings",
+          "address": "75 Columbia Street, New York, NY 10002",
+          "notes": "Historic 1930s cooperative housing complex",
+          "type": "residential"
+        },
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-73.98543, 40.71761]
+        }
+      },
+      {
+        "type": "Feature",
+        "properties": {
+          "name": "Seward Park I",
+          "address": "383 Grand Street, New York, NY 10002",
+          "notes": "Part of the Seward Park Cooperative housing development",
+          "type": "residential"
+        },
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-73.98692, 40.71622]
+        }
+      },
+      {
+        "type": "Feature",
+        "properties": {
+          "name": "Seward Park II",
+          "address": "210 East Broadway, New York, NY 10002",
+          "notes": "Another building within the Seward Park Cooperative complex",
+          "type": "residential"
+        },
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-73.98795, 40.71376]
+        }
+      },
+      {
+        "type": "Feature",
+        "properties": {
+          "name": "Seward Park III",
+          "address": "208 East Broadway, New York, NY 10002",
+          "notes": "Part of the Seward Park Cooperative housing complex",
+          "type": "residential"
+        },
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-73.98760, 40.71350]
+        }
+      },
+      {
+        "type": "Feature",
+        "properties": {
+          "name": "Seward Park IV",
+          "address": "264 East Broadway, New York, NY 10002",
+          "notes": "Final building in the Seward Park Cooperative housing complex",
+          "type": "residential"
+        },
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-73.98586, 40.71311]
+        }
+      },
+      {
+        "type": "Feature",
+        "properties": {
+          "name": "PS 140 Nathan Straus",
+          "address": "123 Ridge Street, New York, NY 10002",
+          "notes": "Public elementary school on the Lower East Side named after philanthropist Nathan Straus",
+          "type": "school"
+        },
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-73.98388, 40.71864]
+        }
+      },
+      {
+        "type": "Feature",
+        "properties": {
+          "name": "Rafael Hernandez Houses",
+          "address": "189 Allen Street, New York, NY 10002",
+          "notes": "NYCHA public housing development named after Puerto Rican composer Rafael Hernández",
+          "type": "residential"
+        },
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-73.98939, 40.72142]
+        }
+      },
+      {
+        "type": "Feature",
+        "properties": {
+          "name": "PS 130 Hernando De Soto School",
+          "address": "143 Baxter Street, New York, NY 10013",
+          "notes": "Public elementary school in Chinatown/Little Italy area",
+          "type": "school"
+        },
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-73.99957, 40.71855]
+        }
+      },
+      {
+        "type": "Feature",
+        "properties": {
+          "name": "PS 20 Anna Silver School",
+          "address": "166 Essex Street, New York, NY 10002",
+          "notes": "Public elementary school on the Lower East Side",
+          "type": "school"
+        },
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-73.98655, 40.72103]
+        }
+      },
+      {
+        "type": "Feature",
+        "properties": {
+          "name": "MS 131 Dr. Sun Yat Sen School",
+          "address": "100 Hester Street, New York, NY 10002",
+          "notes": "Public middle school in Chinatown named after Chinese revolutionary leader Sun Yat-sen",
+          "type": "school"
+        },
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-73.99530, 40.71642]
+        }
+      },
+      {
+        "type": "Feature",
+        "properties": {
+          "name": "Mott Street Senior Center",
+          "address": "70 Mott Street, New York, NY 10013",
+          "notes": "Community senior center in the heart of Chinatown",
+          "type": "community_center"
+        },
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-73.99891, 40.71628]
+        }
+      },
+      {
+        "type": "Feature",
+        "properties": {
+          "name": "East River Housing II",
+          "address": "580 Grand Street, New York, NY 10002",
+          "notes": "Part of the East River cooperative housing development",
+          "type": "residential"
+        },
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-73.97945, 40.71538]
+        }
+      },
+      {
+        "type": "Feature",
+        "properties": {
+          "name": "St. Augustine's Episcopal Church",
+          "address": "290 Henry Street, New York, NY 10002",
+          "notes": "Historic Episcopal church on the Lower East Side; active community hub",
+          "type": "church"
+        },
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-73.98526, 40.71323]
+        }
+      },
+      {
+        "type": "Feature",
+        "properties": {
+          "name": "Confucius Plaza",
+          "address": "33 Bowery, New York, NY 10002",
+          "notes": "Large residential cooperative and cultural landmark in Chinatown",
+          "type": "residential"
+        },
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-73.99669, 40.71487]
+        }
+      },
+      {
+        "type": "Feature",
+        "properties": {
+          "name": "City-As-School High School",
+          "address": "16 Clarkson Street, New York, NY 10014",
+          "notes": "Alternative public high school in Greenwich Village",
+          "type": "school"
+        },
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-74.00660, 40.72847]
+        }
+      },
+      {
+        "type": "Feature",
+        "properties": {
+          "name": "Tweed Courthouse",
+          "address": "52 Chambers Street, New York, NY 10007",
+          "notes": "Historic courthouse building now housing NYC Department of Education",
+          "type": "government building"
+        },
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-74.00557, 40.71311]
+        }
+      },
+      {
+        "type": "Feature",
+        "properties": {
+          "name": "PS 276 The Battery Park City School",
+          "address": "55 Battery Place, New York, NY 10280",
+          "notes": "Public K-8 school located in Battery Park City",
+          "type": "school"
+        },
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-74.017, 40.708]
+        }
+      },
+      {
+        "type": "Feature",
+        "properties": {
+          "name": "PS 89 Liberty School",
+          "address": "201 Warren Street, New York, NY 10282",
+          "notes": "Public elementary school serving grades Pre-K–5 in Battery Park City",
+          "type": "school"
+        },
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-74.0153, 40.7151]
+        }
+      }
+      ]
+    };
+      // Assign unique IDs
+      pollSites.features.forEach((site, i) => site.properties.id = i);
+
+      map.on('load', () => {
+        map.addSource('pollSites', { type: 'geojson', data: pollSites });
+        buildLocationList(pollSites);
+        addMarkers();
+      });
+
+      function addMarkers() {
+        for (const site of pollSites.features) {
+          const el = document.createElement('div');
+          el.id = `marker-${site.properties.id}`;
+          el.className = 'marker';
+
+          new mapboxgl.Marker(el, { offset: [0, -23] })
+            .setLngLat(site.geometry.coordinates)
+            .addTo(map);
+
+          el.addEventListener('click', (e) => {
+            flyToSite(site);
+            createPopUp(site);
+            const activeItem = document.getElementsByClassName('active');
+            if (activeItem[0]) activeItem[0].classList.remove('active');
+            document.getElementById(`listing-${site.properties.id}`).classList.add('active');
+            e.stopPropagation();
+          });
+        }
+      }
+
+      function buildLocationList(sites) {
+        const listings = document.getElementById('listings');
+        listings.innerHTML = '';
+
+        for (const site of sites.features) {
+          const listing = document.createElement('div');
+          listing.id = `listing-${site.properties.id}`;
+          listing.className = 'item';
+
+          const link = document.createElement('a');
+          link.href = '#';
+          link.className = 'title';
+          link.id = `link-${site.properties.id}`;
+          link.innerHTML = `${site.properties.name} <br><small>${site.properties.address}</small>`;
+          listing.appendChild(link);
+
+          const details = document.createElement('div');
+          details.innerHTML = `<strong>Type:</strong> ${site.properties.type} <br><strong>Notes:</strong> ${site.properties.notes || ''}`;
+          listing.appendChild(details);
+
+          link.addEventListener('click', function () {
+            flyToSite(site);
+            createPopUp(site);
+            const activeItem = document.getElementsByClassName('active');
+            if (activeItem[0]) activeItem[0].classList.remove('active');
+            listing.classList.add('active');
+          });
+
+          listings.appendChild(listing);
+        }
+      }
+
+      function flyToSite(site) {
+        map.flyTo({ center: site.geometry.coordinates, zoom: 15 });
+      }
+
+      function createPopUp(site) {
+        const popUps = document.getElementsByClassName('mapboxgl-popup');
+        if (popUps[0]) popUps[0].remove();
+
+        new mapboxgl.Popup({ closeOnClick: false })
+          .setLngLat(site.geometry.coordinates)
+          .setHTML(
+            `<h3>${site.properties.name}</h3>
+             <h4>${site.properties.address}</h4>
+             <p>${site.properties.notes || ''}</p>`
+          )
+          .addTo(map);
+      }
+    </script>
+  </body>
+</html>
